@@ -42,19 +42,18 @@ export async function updateSession(request: NextRequest) {
     if (
         !user &&
         !isPublicRoute &&
-        !request.nextUrl.pathname.startsWith('/_next') &&
-        request.nextUrl.pathname !== '/' // Assuming we want the landing page public
+        !request.nextUrl.pathname.startsWith('/_next')
     ) {
-        // no user, potentially respond by redirecting the user to the login page
+        // No user session — redirect to login
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
-    // If user is signed in and current path is /login or /signup, redirect to home
+    // If user is signed in and tries to access /login or /signup, send them home
     if (user && isPublicRoute) {
         const url = request.nextUrl.clone()
-        url.pathname = '/projects'
+        url.pathname = '/'
         return NextResponse.redirect(url)
     }
 

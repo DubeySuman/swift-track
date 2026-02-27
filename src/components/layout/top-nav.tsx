@@ -3,7 +3,7 @@
 import { useTheme } from "next-themes"
 import { Moon, Sun, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { logout } from "@/app/login/actions"
+import { logout } from "@/app/(auth)/login/actions"
 import { type User as SupabaseUser } from '@supabase/supabase-js'
 
 interface TopNavProps {
