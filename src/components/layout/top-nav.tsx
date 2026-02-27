@@ -1,10 +1,16 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { Moon, Sun, User } from "lucide-react"
+import { Moon, Sun, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { logout } from "@/app/login/actions"
+import { type User as SupabaseUser } from '@supabase/supabase-js'
 
-export function TopNav() {
+interface TopNavProps {
+    user: SupabaseUser | null
+}
+
+export function TopNav({ user }: TopNavProps) {
     const { theme, setTheme } = useTheme()
 
     return (
@@ -12,6 +18,13 @@ export function TopNav() {
             <div className="w-full flex-1">
                 {/* Mobile menu could go here */}
             </div>
+
+            {user && (
+                <span className="text-sm text-muted-foreground mr-2 hidden sm:inline-block">
+                    {user.email}
+                </span>
+            )}
+
             <Button
                 variant="ghost"
                 size="icon"
@@ -21,10 +34,20 @@ export function TopNav() {
                 <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
-                <span className="sr-only">Toggle user menu</span>
-            </Button>
+
+            {user ? (
+                <form action={logout}>
+                    <Button variant="ghost" size="icon" type="submit" title="Logout">
+                        <LogOut className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
+                        <span className="sr-only">Logout</span>
+                    </Button>
+                </form>
+            ) : (
+                <Button variant="ghost" size="icon" className="rounded-full">
+                    <User className="h-5 w-5" />
+                    <span className="sr-only">User menu</span>
+                </Button>
+            )}
         </header>
     )
 }
