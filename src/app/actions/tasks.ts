@@ -48,3 +48,30 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus, proje
     revalidatePath(`/projects/${projectId}`)
     return { success: true }
 }
+
+export async function updateTask(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not authenticated' }
+
+    const taskId = formData.get('task_id') as string
+    const title = formData.get('title') as string
+    const description = formData.get('description') as string
+    const projectId = formData.get('project_id') as string
+
+    if (!title?.trim()) return { error: 'Task title is required' }
+
+    const { error } = await supabase
+        .from('tasks')
+        .update({
+            title: title.trim(),
+            description: description?.trim() || null,
+        })
+        .eq('id', taskId)
+        .eq('user_id', user.id)
+
+    if (error) return { error: error.message }
+
+    revalidatePath(`/projects/${projectId}`)
+    return { success: true }
+}
