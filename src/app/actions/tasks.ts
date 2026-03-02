@@ -79,3 +79,20 @@ export async function updateTask(formData: FormData) {
     revalidatePath(`/projects/${projectId}`)
     return { success: true }
 }
+
+export async function deleteTask(taskId: string, projectId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not authenticated' }
+
+    const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+        .eq('user_id', user.id) // RLS + extra guard
+
+    if (error) return { error: error.message }
+
+    revalidatePath(`/projects/${projectId}`)
+    return { success: true }
+}

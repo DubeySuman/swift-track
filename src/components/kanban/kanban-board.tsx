@@ -107,8 +107,12 @@ export function KanbanBoard({ initialTasks, projectId }: KanbanBoardProps) {
     }
 
     function handleTaskCreated(newTask: Task) {
-        // Prepend so the new task appears at the top of "To Do"
+        // Append so the new task appears at the bottom of "To Do"
         setTasks((prev) => [...prev, newTask])
+    }
+
+    function handleTaskDeleted(taskId: string) {
+        setTasks((prev) => prev.filter((t) => t.id !== taskId))
     }
 
     const tasksByStatus = tasks.reduce<Record<TaskStatus, Task[]>>(
@@ -158,6 +162,7 @@ export function KanbanBoard({ initialTasks, projectId }: KanbanBoardProps) {
                         if (!o) setSelectedTask(null)
                     }}
                     onTaskUpdate={handleTaskUpdate}
+                    onTaskDeleted={handleTaskDeleted}
                 />
             )}
         </>

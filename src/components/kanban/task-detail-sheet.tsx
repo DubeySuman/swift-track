@@ -2,8 +2,8 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarDays, Save } from 'lucide-react'
-import { updateTask } from '@/app/actions/tasks'
+import { CalendarDays, Save, Trash2 } from 'lucide-react'
+import { updateTask, deleteTask } from '@/app/actions/tasks'
 import type { Task } from './task-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,17 @@ import {
     SheetTitle,
     SheetDescription,
 } from '@/components/ui/sheet'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 interface TaskDetailSheetProps {
     task: Task
@@ -23,6 +34,7 @@ interface TaskDetailSheetProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     onTaskUpdate: (task: Task) => void
+    onTaskDeleted: (taskId: string) => void
 }
 
 export function TaskDetailSheet({
@@ -31,13 +43,15 @@ export function TaskDetailSheet({
     open,
     onOpenChange,
     onTaskUpdate,
+    onTaskDeleted,
 }: TaskDetailSheetProps) {
     const [title, setTitle] = useState(task.title)
     const [description, setDescription] = useState(task.description ?? '')
     const [error, setError] = useState<string | null>(null)
-    const [isPending, startTransition] = useTransition()
+    const [isSaving, startSaveTransition] = useTransition()
+    const [isDeleting, startDeleteTransition] = useTransition()
 
-    // Sync form with the selected task whenever it changes
+    // Sync form fields whenever a different task is opened
     useEffect(() => {
         setTitle(task.title)
         setDescription(task.description ?? '')
@@ -57,14 +71,25 @@ export function TaskDetailSheet({
         formData.set('description', description.trim())
         formData.set('project_id', projectId)
 
-        startTransition(async () => {
+        startSaveTransition(async () => {
             const result = await updateTask(formData)
             if (result?.error) {
                 setError(result.error)
             } else {
-                // Optimistically update local state so the card reflects the new title immediately
                 onTaskUpdate({ ...task, title: title.trim(), description: description.trim() || null })
                 onOpenChange(false)
+            }
+        })
+    }
+
+    function handleDelete() {
+        startDeleteTransition(async () => {
+            const result = await deleteTask(task.id, projectId)
+            if (result?.error) {
+                setError(result.error)
+            } else {
+                onOpenChange(false)
+                onTaskDeleted(task.id)
             }
         })
     }
@@ -74,6 +99,8 @@ export function TaskDetailSheet({
         month: 'long',
         day: 'numeric',
     })
+
+    const isPending = isSaving || isDeleting
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -137,18 +164,55 @@ export function TaskDetailSheet({
                         </motion.div>
                     </div>
 
-                    <div className="px-6 py-4 border-t flex items-center justify-end gap-2 shrink-0">
-                        <Button
-                            variant="ghost"
-                            onClick={() => onOpenChange(false)}
-                            disabled={isPending}
-                        >
-                            Cancel
-                        </Button>
-                        <Button onClick={handleSave} disabled={isPending} className="gap-2">
-                            <Save className="h-4 w-4" />
-                            {isPending ? 'Saving…' : 'Save Changes'}
-                        </Button>
+                    {/* Footer — Save/Cancel on right, Delete on left */}
+                    <div className="px-6 py-4 border-t flex items-center justify-between shrink-0">
+                        {/* Delete with confirmation guardrail */}
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={isPending}
+                                    className="gap-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        <span className="font-medium text-foreground">"{task.title}"</span> will be permanently deleted. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleDelete}
+                                        disabled={isDeleting}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        {isDeleting ? 'Deleting…' : 'Delete Task'}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+
+                        {/* Save / Cancel */}
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                onClick={() => onOpenChange(false)}
+                                disabled={isPending}
+                            >
+                                Cancel
+                            </Button>
+                            <Button onClick={handleSave} disabled={isPending} className="gap-2">
+                                <Save className="h-4 w-4" />
+                                {isSaving ? 'Saving…' : 'Save Changes'}
+                            </Button>
+                        </div>
                     </div>
                 </motion.div>
             </SheetContent>
