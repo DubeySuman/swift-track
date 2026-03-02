@@ -18,9 +18,10 @@ interface KanbanColumnProps {
     tasks: Task[]
     projectId: string
     onCardClick: (task: Task) => void
+    onTaskCreated: (task: Task) => void
 }
 
-export function KanbanColumn({ column, tasks, projectId, onCardClick }: KanbanColumnProps) {
+export function KanbanColumn({ column, tasks, projectId, onCardClick, onTaskCreated }: KanbanColumnProps) {
     const { setNodeRef, isOver } = useDroppable({ id: column.id })
     const Icon = column.icon
 
@@ -28,8 +29,8 @@ export function KanbanColumn({ column, tasks, projectId, onCardClick }: KanbanCo
         <div
             ref={setNodeRef}
             className={`flex flex-col gap-3 rounded-xl border p-3 transition-all duration-200 ${isOver
-                    ? 'bg-muted/60 border-primary/40 shadow-inner'
-                    : 'bg-muted/30 border-border/50'
+                ? 'bg-muted/60 border-primary/40 shadow-inner'
+                : 'bg-muted/30 border-border/50'
                 }`}
         >
             {/* Column Header */}
@@ -41,7 +42,7 @@ export function KanbanColumn({ column, tasks, projectId, onCardClick }: KanbanCo
                         {tasks.length}
                     </span>
                 </div>
-                {column.id === 'todo' && <AddTaskDialog projectId={projectId} />}
+                {column.id === 'todo' && <AddTaskDialog projectId={projectId} onTaskCreated={onTaskCreated} />}
             </div>
 
             {/* Drop Zone + Cards */}
@@ -49,8 +50,8 @@ export function KanbanColumn({ column, tasks, projectId, onCardClick }: KanbanCo
                 {tasks.length === 0 ? (
                     <div
                         className={`flex items-center justify-center h-[80px] rounded-lg border border-dashed text-xs transition-all duration-200 ${isOver
-                                ? 'border-primary/50 bg-primary/5 text-primary'
-                                : 'border-border/40 text-muted-foreground'
+                            ? 'border-primary/50 bg-primary/5 text-primary'
+                            : 'border-border/40 text-muted-foreground'
                             }`}
                     >
                         {isOver ? '↓ Drop here' : 'No tasks yet'}

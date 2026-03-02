@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { createTask } from '@/app/actions/tasks'
+import type { Task } from '@/components/kanban/task-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,9 +20,10 @@ import {
 
 interface AddTaskDialogProps {
     projectId: string
+    onTaskCreated: (task: Task) => void
 }
 
-export function AddTaskDialog({ projectId }: AddTaskDialogProps) {
+export function AddTaskDialog({ projectId, onTaskCreated }: AddTaskDialogProps) {
     const [open, setOpen] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
@@ -33,7 +35,9 @@ export function AddTaskDialog({ projectId }: AddTaskDialogProps) {
         if (result?.error) {
             setError(result.error)
             setLoading(false)
-        } else {
+        } else if (result?.task) {
+            // Immediately push the new task into the board's local state
+            onTaskCreated(result.task as Task)
             setOpen(false)
             setLoading(false)
         }

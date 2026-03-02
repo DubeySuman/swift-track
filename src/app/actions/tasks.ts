@@ -17,18 +17,22 @@ export async function createTask(formData: FormData) {
 
     if (!title?.trim()) return { error: 'Task title is required' }
 
-    const { error } = await supabase.from('tasks').insert({
-        title: title.trim(),
-        description: description?.trim() || null,
-        project_id: projectId,
-        user_id: user.id,
-        status: 'todo',
-    })
+    const { data: newTask, error } = await supabase
+        .from('tasks')
+        .insert({
+            title: title.trim(),
+            description: description?.trim() || null,
+            project_id: projectId,
+            user_id: user.id,
+            status: 'todo',
+        })
+        .select('id, title, description, status, created_at')
+        .single()
 
     if (error) return { error: error.message }
 
     revalidatePath(`/projects/${projectId}`)
-    return { success: true }
+    return { success: true, task: newTask }
 }
 
 export async function updateTaskStatus(taskId: string, status: TaskStatus, projectId: string) {

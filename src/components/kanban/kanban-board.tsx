@@ -106,6 +106,11 @@ export function KanbanBoard({ initialTasks, projectId }: KanbanBoardProps) {
         )
     }
 
+    function handleTaskCreated(newTask: Task) {
+        // Prepend so the new task appears at the top of "To Do"
+        setTasks((prev) => [...prev, newTask])
+    }
+
     const tasksByStatus = tasks.reduce<Record<TaskStatus, Task[]>>(
         (acc, task) => {
             acc[task.status].push(task)
@@ -130,6 +135,7 @@ export function KanbanBoard({ initialTasks, projectId }: KanbanBoardProps) {
                             tasks={tasksByStatus[col.id]}
                             projectId={projectId}
                             onCardClick={handleCardClick}
+                            onTaskCreated={handleTaskCreated}
                         />
                     ))}
                 </div>
