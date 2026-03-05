@@ -19,6 +19,7 @@ import {
 import type { Task } from './task-card'
 import { RichTextEditor } from './rich-text-editor'
 import { RichTextPreview } from './rich-text-preview'
+import UploadHero from '@/components/icons/UploadHero'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -175,7 +176,7 @@ export function TaskFullView({
                 w-[92vw] max-w-5xl — large canvas feel.
                 pr-14 on the toolbar clears the Shadcn close button (absolute right-4 top-4 ≈ 40px)
             */}
-            <DialogContent className="w-[95vw] max-w-screen-2xl min-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden">
+            <DialogContent className="w-full max-w-[95vw] h-full max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
                 {/* Screen-reader accessible title */}
                 <DialogTitle className="sr-only">{task.title} — Full View</DialogTitle>
 
@@ -317,6 +318,24 @@ export function TaskFullView({
                                 <RichTextPreview content={description} />
                             </div>
                         )}
+                    </div>
+
+                    {/* ── Attachments Dropzone ─────────────────────────────────── */}
+                    <div className="shrink-0">
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                                Attachments
+                            </p>
+                        </div>
+                        <div className="group border-2 border-dashed border-zinc-200 rounded-xl p-12 hover:bg-zinc-50 transition-all flex flex-col items-center justify-center cursor-pointer">
+                            <UploadHero className="w-24 h-24 text-zinc-400 group-hover:text-zinc-600 transition-colors" />
+                            <p className="mt-4 text-sm font-medium text-zinc-500">
+                                Click or drag files to upload
+                            </p>
+                            <p className="text-xs text-zinc-400 mt-1">
+                                Supports PDF, CSV, Excel, and Text (Max 5MB)
+                            </p>
+                        </div>
                     </div>
 
                     {/* ── Comments Placeholder ─────────────────────────────────── */}
