@@ -2,13 +2,13 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarDays, Save, Trash2 } from 'lucide-react'
+import { CalendarDays, Save, Trash2, Maximize2 } from 'lucide-react'
 import { updateTask, deleteTask } from '@/app/actions/tasks'
 import type { Task } from './task-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { RichTextPreview } from './rich-text-preview'
 import {
     Sheet,
     SheetContent,
@@ -35,6 +35,7 @@ interface TaskDetailSheetProps {
     onOpenChange: (open: boolean) => void
     onTaskUpdate: (task: Task) => void
     onTaskDeleted: (taskId: string) => void
+    onExpand: () => void
 }
 
 export function TaskDetailSheet({
@@ -44,8 +45,10 @@ export function TaskDetailSheet({
     onOpenChange,
     onTaskUpdate,
     onTaskDeleted,
+    onExpand,
 }: TaskDetailSheetProps) {
     const [title, setTitle] = useState(task.title)
+    const [summary, setSummary] = useState(task.summary)
     const [description, setDescription] = useState(task.description ?? '')
     const [error, setError] = useState<string | null>(null)
     const [isSaving, startSaveTransition] = useTransition()
@@ -54,20 +57,20 @@ export function TaskDetailSheet({
     // Sync form fields whenever a different task is opened
     useEffect(() => {
         setTitle(task.title)
+        setSummary(task.summary)
         setDescription(task.description ?? '')
         setError(null)
     }, [task.id])
 
     function handleSave() {
-        if (!title.trim()) {
-            setError('Title is required')
-            return
-        }
+        if (!title.trim()) { setError('Title is required'); return }
+        if (!summary.trim()) { setError('Summary is required'); return }
         setError(null)
 
         const formData = new FormData()
         formData.set('task_id', task.id)
         formData.set('title', title.trim())
+        formData.set('summary', summary.trim())
         formData.set('description', description.trim())
         formData.set('project_id', projectId)
 
@@ -76,7 +79,12 @@ export function TaskDetailSheet({
             if (result?.error) {
                 setError(result.error)
             } else {
-                onTaskUpdate({ ...task, title: title.trim(), description: description.trim() || null })
+                onTaskUpdate({
+                    ...task,
+                    title: title.trim(),
+                    summary: summary.trim(),
+                    description: description.trim() || null
+                })
                 onOpenChange(false)
             }
         })
@@ -112,11 +120,23 @@ export function TaskDetailSheet({
                     className="flex flex-col h-full"
                 >
                     <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-                        <SheetTitle className="text-left text-base">Edit Task</SheetTitle>
-                        <SheetDescription className="text-left flex items-center gap-1.5 text-xs mt-1">
-                            <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                            Created {createdAt}
-                        </SheetDescription>
+                        <div className="flex items-center justify-between pr-8">
+                            <div>
+                                <SheetTitle className="text-left text-base">Edit Task</SheetTitle>
+                                <SheetDescription className="text-left flex items-center gap-1.5 text-xs mt-1">
+                                    <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+                                    Created {createdAt}
+                                </SheetDescription>
+                            </div>
+                            <button
+                                onClick={onExpand}
+                                title="Open full view"
+                                className="rounded-md p-1.5 text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-colors"
+                            >
+                                <Maximize2 className="h-4 w-4" />
+                                <span className="sr-only">Open full view</span>
+                            </button>
+                        </div>
                     </SheetHeader>
 
                     <div className="flex flex-col gap-5 px-6 py-6 flex-1 overflow-y-auto">
@@ -149,18 +169,41 @@ export function TaskDetailSheet({
                         <motion.div
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.10 }}
+                            className="grid gap-2"
+                        >
+                            <Label htmlFor="sheet-summary">Summary</Label>
+                            <Input
+                                id="sheet-summary"
+                                value={summary}
+                                onChange={(e) => setSummary(e.target.value)}
+                                placeholder="Brief overview of the task"
+                            />
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.13 }}
                             className="grid gap-2"
                         >
-                            <Label htmlFor="sheet-description">Description</Label>
-                            <Textarea
-                                id="sheet-description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Add more context about this task..."
-                                rows={6}
-                                className="resize-none"
-                            />
+                            <div className="flex items-center justify-between">
+                                <Label>Description</Label>
+                                <button
+                                    type="button"
+                                    onClick={onExpand}
+                                    className="text-[10px] text-muted-foreground hover:text-primary transition-colors uppercase tracking-wider font-semibold"
+                                >
+                                    Edit Full
+                                </button>
+                            </div>
+                            <div
+                                onClick={onExpand}
+                                title="Click to edit full description"
+                                className="rounded-md border border-border/60 bg-muted/20 px-3 py-2 cursor-pointer hover:border-primary/40 transition-colors min-h-[120px]"
+                            >
+                                <RichTextPreview content={description} />
+                            </div>
                         </motion.div>
                     </div>
 

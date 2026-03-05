@@ -120,7 +120,83 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ── TipTap / ProseMirror Rich Text Editor ──────────────────────────────── */
+.tiptap,
+.ProseMirror {
+  outline: none;
+  caret-color: var(--primary);
+}
+
+.tiptap p,
+.ProseMirror p {
+  margin: 0;
+  line-height: 1.75;
+}
+
+.tiptap p+p,
+.ProseMirror p+p {
+  margin-top: 0.4em;
+}
+
+.tiptap ul,
+.tiptap ol,
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+
+/* Restore list markers suppressed by Tailwind's preflight reset */
+.tiptap ul,
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.tiptap ol,
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.tiptap li,
+.ProseMirror li {
+  margin: 0.15em 0;
+  line-height: 1.75;
+}
+
+.tiptap li p,
+.ProseMirror li p {
+  margin: 0;
+}
+
+.tiptap strong,
+.ProseMirror strong {
+  font-weight: 600;
+}
+
+.tiptap em,
+.ProseMirror em {
+  font-style: italic;
+}
+
+.tiptap u,
+.ProseMirror u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Placeholder (shown when editor is empty) */
+.tiptap p.is-editor-empty:first-child::before,
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+  opacity: 0.45;
 }

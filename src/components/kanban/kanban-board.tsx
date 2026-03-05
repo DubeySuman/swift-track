@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import {
     DndContext,
     DragOverlay,
@@ -16,6 +16,7 @@ import { updateTaskStatus, type TaskStatus } from '@/app/actions/tasks'
 import { KanbanColumn } from './kanban-column'
 import { DragOverlayCard, type Task } from './task-card'
 import { TaskDetailSheet } from './task-detail-sheet'
+import { TaskFullView } from './task-full-view'
 
 interface Column {
     id: TaskStatus
@@ -59,15 +60,20 @@ export function KanbanBoard({ initialTasks, projectId }: KanbanBoardProps) {
     const [activeTask, setActiveTask] = useState<Task | null>(null)
     const [selectedTask, setSelectedTask] = useState<Task | null>(null)
     const [sheetOpen, setSheetOpen] = useState(false)
+    const [fullViewOpen, setFullViewOpen] = useState(false)
     const [, startTransition] = useTransition()
 
-    // Require the user to move the pointer 8px before a drag starts,
-    // so clicks and taps still register on the card.
+    // Tracks when the sheet is being closed to open the full view,
+    // so we don't clear selectedTask prematurely.
+    const expandingRef = useRef(false)
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: { distance: 8 },
         })
     )
+
+    // ── Drag handlers ──────────────────────────────────────────────────────
 
     function handleDragStart(event: DragStartEvent) {
         const task = tasks.find((t) => t.id === event.active.id)
@@ -84,36 +90,61 @@ export function KanbanBoard({ initialTasks, projectId }: KanbanBoardProps) {
         const task = tasks.find((t) => t.id === active.id)
         if (!task || task.status === newStatus) return
 
-        // Immediately move the card to the new column in local state
         setTasks((prev) =>
             prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
         )
 
-        // Persist in the background — revalidatePath will sync server state
         startTransition(async () => {
             await updateTaskStatus(task.id, newStatus, projectId)
         })
     }
+
+    // ── Card interaction ───────────────────────────────────────────────────
 
     function handleCardClick(task: Task) {
         setSelectedTask(task)
         setSheetOpen(true)
     }
 
+    // Expand: close sheet → open full view without clearing selectedTask
+    function handleExpand() {
+        expandingRef.current = true
+        setSheetOpen(false)
+        setFullViewOpen(true)
+    }
+
+    function handleSheetOpenChange(open: boolean) {
+        setSheetOpen(open)
+        if (!open && !expandingRef.current) {
+            setSelectedTask(null)
+        }
+        expandingRef.current = false
+    }
+
+    function handleFullViewOpenChange(open: boolean) {
+        setFullViewOpen(open)
+        if (!open) setSelectedTask(null)
+    }
+
+    // ── Task mutations ─────────────────────────────────────────────────────
+
     function handleTaskUpdate(updatedTask: Task) {
         setTasks((prev) =>
             prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
         )
+        // Keep selectedTask in sync so re-opening the sheet shows fresh data
+        setSelectedTask(updatedTask)
     }
 
     function handleTaskCreated(newTask: Task) {
-        // Append so the new task appears at the bottom of "To Do"
         setTasks((prev) => [...prev, newTask])
     }
 
     function handleTaskDeleted(taskId: string) {
         setTasks((prev) => prev.filter((t) => t.id !== taskId))
     }
+
+    // ── Derived ────────────────────────────────────────────────────────────
 
     const tasksByStatus = tasks.reduce<Record<TaskStatus, Task[]>>(
         (acc, task) => {
@@ -144,23 +175,33 @@ export function KanbanBoard({ initialTasks, projectId }: KanbanBoardProps) {
                     ))}
                 </div>
 
-                {/* Drag ghost — rendered in a portal above everything */}
                 <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
                     {activeTask ? <DragOverlayCard task={activeTask} /> : null}
                 </DragOverlay>
             </DndContext>
 
-            {/* Task detail sheet — only mount when a task is selected */}
+            {/* Side sheet — compact quick-edit */}
             {selectedTask && (
                 <TaskDetailSheet
                     key={selectedTask.id}
                     task={selectedTask}
                     projectId={projectId}
                     open={sheetOpen}
-                    onOpenChange={(o) => {
-                        setSheetOpen(o)
-                        if (!o) setSelectedTask(null)
-                    }}
+                    onOpenChange={handleSheetOpenChange}
+                    onTaskUpdate={handleTaskUpdate}
+                    onTaskDeleted={handleTaskDeleted}
+                    onExpand={handleExpand}
+                />
+            )}
+
+            {/* Full-view modal — document-like deep work */}
+            {selectedTask && (
+                <TaskFullView
+                    key={`full-${selectedTask.id}`}
+                    task={selectedTask}
+                    projectId={projectId}
+                    open={fullViewOpen}
+                    onOpenChange={handleFullViewOpenChange}
                     onTaskUpdate={handleTaskUpdate}
                     onTaskDeleted={handleTaskDeleted}
                 />

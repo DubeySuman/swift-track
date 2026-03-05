@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 export interface Task {
     id: string
     title: string
+    summary: string
     description: string | null
     status: TaskStatus
     created_at: string
@@ -61,10 +62,10 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
                 </div>
             </CardHeader>
 
-            {task.description && (
+            {task.summary && (
                 <CardContent className="pb-3 pt-0 px-4">
                     <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                        {task.description}
+                        {task.summary}
                     </p>
                 </CardContent>
             )}
@@ -84,9 +85,11 @@ export function DragOverlayCard({ task }: { task: Task }) {
                     <span className="text-sm font-medium leading-snug">{task.title}</span>
                 </div>
             </CardHeader>
-            {task.description && (
+            {task.summary && (
                 <CardContent className="pb-3 pt-0 px-4">
-                    <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                        {task.summary}
+                    </p>
                 </CardContent>
             )}
         </Card>

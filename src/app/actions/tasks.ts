@@ -12,21 +12,24 @@ export async function createTask(formData: FormData) {
     if (!user) return { error: 'Not authenticated' }
 
     const title = formData.get('title') as string
+    const summary = formData.get('summary') as string
     const description = formData.get('description') as string
     const projectId = formData.get('project_id') as string
 
     if (!title?.trim()) return { error: 'Task title is required' }
+    if (!summary?.trim()) return { error: 'Task summary is required' }
 
     const { data: newTask, error } = await supabase
         .from('tasks')
         .insert({
             title: title.trim(),
+            summary: summary.trim(),
             description: description?.trim() || null,
             project_id: projectId,
             user_id: user.id,
             status: 'todo',
         })
-        .select('id, title, description, status, created_at')
+        .select('id, title, summary, description, status, created_at')
         .single()
 
     if (error) return { error: error.message }
@@ -60,15 +63,18 @@ export async function updateTask(formData: FormData) {
 
     const taskId = formData.get('task_id') as string
     const title = formData.get('title') as string
+    const summary = formData.get('summary') as string
     const description = formData.get('description') as string
     const projectId = formData.get('project_id') as string
 
     if (!title?.trim()) return { error: 'Task title is required' }
+    if (!summary?.trim()) return { error: 'Task summary is required' }
 
     const { error } = await supabase
         .from('tasks')
         .update({
             title: title.trim(),
+            summary: summary.trim(),
             description: description?.trim() || null,
         })
         .eq('id', taskId)

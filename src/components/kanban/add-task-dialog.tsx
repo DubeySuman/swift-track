@@ -77,6 +77,15 @@ export function AddTaskDialog({ projectId, onTaskCreated }: AddTaskDialogProps) 
                             />
                         </div>
                         <div className="grid gap-2">
+                            <Label htmlFor="task-summary">Summary</Label>
+                            <Input
+                                id="task-summary"
+                                name="summary"
+                                placeholder="A brief 1-2 sentence overview..."
+                                required
+                            />
+                        </div>
+                        <div className="grid gap-2">
                             <Label htmlFor="task-description">Description (Optional)</Label>
                             <Textarea
                                 id="task-description"

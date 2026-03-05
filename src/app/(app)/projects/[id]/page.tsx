@@ -6,6 +6,7 @@ import type { TaskStatus } from '@/app/actions/tasks'
 interface Task {
     id: string
     title: string
+    summary: string
     description: string | null
     status: TaskStatus
     created_at: string
@@ -27,7 +28,7 @@ export default async function ProjectPage({
             .single(),
         supabase
             .from('tasks')
-            .select('id, title, description, status, created_at')
+            .select('id, title, summary, description, status, created_at')
             .eq('project_id', id)
             .order('created_at', { ascending: true }),
     ])
