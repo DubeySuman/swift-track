@@ -36,8 +36,8 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     // Ensure these routes are public
-    const publicRoutes = ['/login', '/signup']
-    const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
+    const publicRoutes = ['/login', '/signup', '/api/auth/callback']
+    const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
     if (
         !user &&
@@ -50,10 +50,16 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    // If user is signed in and tries to access /login or /signup, send them home
-    if (user && isPublicRoute) {
+    // If user is signed in and tries to access /login or /signup, send them to dashboard
+    if (user && isPublicRoute && request.nextUrl.pathname !== '/api/auth/callback') {
         const url = request.nextUrl.clone()
-        url.pathname = '/'
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+    }
+
+    if (user && request.nextUrl.pathname === '/') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
         return NextResponse.redirect(url)
     }
 
