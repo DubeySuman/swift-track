@@ -2,18 +2,33 @@ import Link from "next/link"
 import { LayoutDashboard, CheckSquare, Settings, Folder } from "lucide-react"
 import { createClient } from "@/utils/supabase/server"
 import { CreateProjectDialog } from "@/components/layout/create-project-dialog"
+import { SidebarUserMenu } from "@/components/layout/sidebar-user-menu"
 
 export async function Sidebar() {
     const supabase = await createClient()
 
     // Fetch projects for the logged in user
-    // This fails gracefully and returns an empty list if not logged in
     const { data: projects } = await supabase
         .from('projects')
         .select('id, name')
         .order('created_at', { ascending: false })
+
+    // Fetch the current user's profile for the bottom user section
+    const { data: { user } } = await supabase.auth.getUser()
+    let profile: { full_name: string | null; avatar_url: string | null } | null = null
+    if (user) {
+        const { data } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', user.id)
+            .single()
+        profile = data ?? null
+    }
+
+    const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User'
+
     return (
-        <aside className="hidden border-r bg-muted/40 md:block w-64 h-screen fixed top-0 left-0 bg-background flex-col z-10 transition-transform">
+        <aside className="hidden border-r bg-muted/40 md:flex md:flex-col w-64 h-screen fixed top-0 left-0 bg-background z-10 transition-transform">
             <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
                 <Link href="/" className="flex items-center gap-2 font-semibold">
                     <CheckSquare className="h-6 w-6" />
@@ -68,6 +83,15 @@ export async function Sidebar() {
                         Settings
                     </Link>
                 </nav>
+            </div>
+
+            {/* ── User Profile footer — interactive dropdown ──────────────── */}
+            <div className="border-t p-3">
+                <SidebarUserMenu
+                    displayName={displayName}
+                    email={user?.email}
+                    avatarUrl={profile?.avatar_url}
+                />
             </div>
         </aside>
     )

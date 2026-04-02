@@ -5,12 +5,17 @@ import {
     Clock,
     ArrowRight,
     Circle,
+    Activity,
+    TrendingUp,
 } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { getTrackers } from '@/app/actions/trackers'
+import { MetricCard } from '@/components/trackers/tracker-card'
+import { CreateTrackerDialog } from '@/components/trackers/create-tracker-dialog'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,6 +100,9 @@ export default async function DashboardPage() {
             .order('created_at', { ascending: false })
             .limit(5),
     ])
+
+    // Fetch trackers in parallel
+    const trackers = await getTrackers()
 
     // ── Stat cards ────────────────────────────────────────────────────────────
 
@@ -307,6 +315,84 @@ export default async function DashboardPage() {
                     </CardContent>
                 </Card>
             )}
+            {/* ── Project Metric Trackers ── */}
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="rounded-md bg-primary/10 p-1.5">
+                            <TrendingUp className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-semibold">Project Metrics</h2>
+                            <p className="text-xs text-muted-foreground">
+                                {trackers.length > 0
+                                    ? `${trackers.length} metric${trackers.length !== 1 ? 's' : ''} across ${new Set(trackers.map((t) => t.project_name)).size} project${new Set(trackers.map((t) => t.project_name)).size !== 1 ? 's' : ''}`
+                                    : 'No metrics tracked yet'}
+                            </p>
+                        </div>
+                    </div>
+                    <CreateTrackerDialog compact />
+                </div>
+
+                {trackers.length > 0 ? (
+                    // Group metrics by project_name
+                    <div className="space-y-6">
+                        {Object.entries(
+                            trackers.reduce<Record<string, typeof trackers>>((acc, t) => {
+                                acc[t.project_name] = acc[t.project_name] ?? []
+                                acc[t.project_name].push(t)
+                                return acc
+                            }, {})
+                        ).map(([projectName, metrics]) => {
+                            // Aggregate progress for the project header
+                            const avgPct = Math.round(
+                                metrics.reduce((sum, m) =>
+                                    sum + Math.min(100, (m.current_value / m.target_value) * 100), 0
+                                ) / metrics.length
+                            )
+                            return (
+                                <div key={projectName} className="space-y-2">
+                                    {/* Project group header */}
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            {projectName}
+                                        </h3>
+                                        <div className="flex-1 h-px bg-border/60" />
+                                        <span className={`text-xs font-bold tabular-nums ${
+                                            avgPct >= 100 ? 'text-emerald-500' :
+                                            avgPct >= 60  ? 'text-blue-400' :
+                                            avgPct >= 30  ? 'text-amber-400' : 'text-rose-400'
+                                        }`}>
+                                            {avgPct}% avg
+                                        </span>
+                                    </div>
+                                    {/* Metric cards */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {metrics.map((tracker) => (
+                                            <MetricCard key={tracker.id} tracker={tracker} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                ) : (
+                    <Card className="border-dashed border-border/60 bg-muted/20">
+                        <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+                            <div className="rounded-full bg-muted p-4">
+                                <TrendingUp className="h-8 w-8 text-muted-foreground/40" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-sm">No project metrics yet</p>
+                                <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                                    Track completion percentages, hours invested, or task counts for your projects.
+                                </p>
+                            </div>
+                            <CreateTrackerDialog />
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
         </div>
     )
 }
